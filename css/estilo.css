@@ -102,10 +102,10 @@ table.list th{font-family:var(--f-ui);font-size:10.5px;letter-spacing:.1em;color
 /* uso de habilidades */
 .ab.can{border-color:var(--ok);box-shadow:inset 0 0 0 1px var(--ok);cursor:pointer}
 .ab.can:hover{background:var(--card)}
-.ab.used{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--paper));box-shadow:inset 0 0 0 2px var(--ok);cursor:pointer}
+.ab.used{border-color:var(--rubro2);background:color-mix(in srgb,var(--rubro2) 10%,var(--paper));box-shadow:inset 0 0 0 2px var(--rubro2)}
 .ab.cant{opacity:.62}
 .ab.cant .why,.ab.used .why,.ab.can .why,.ab.sel .why{font-family:var(--f-ui);font-size:10.5px;font-weight:600;letter-spacing:.04em}
-.ab.cant .why{color:var(--warn)}.ab.used .why,.ab.can .why{color:var(--ok)}
+.ab.cant .why{color:var(--warn)}.ab.can .why{color:var(--ok)}.ab.used .why{color:var(--rubro2)}
 .ab.sel{border-color:var(--de);box-shadow:inset 0 0 0 2px var(--de);background:color-mix(in srgb,var(--de) 10%,var(--paper));cursor:pointer}
 .ab.sel .why{color:var(--de)}
 .forma.sel{outline:2px solid var(--de);background:color-mix(in srgb,var(--de) 10%,var(--paper));cursor:pointer;padding:2px 4px}
@@ -117,7 +117,12 @@ table.list th{font-family:var(--f-ui);font-size:10.5px;letter-spacing:.1em;color
 .acao .btn.pri{background:var(--de);border-color:var(--de);color:#16130f}
 .acao .btn:disabled{opacity:.45;cursor:not-allowed}
 .forma.can{outline:1.5px solid var(--ok);outline-offset:1px;cursor:pointer;padding:2px 4px}
-.forma.used{outline:2px solid var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--paper));cursor:pointer;padding:2px 4px}
+.forma.used{outline:2px solid var(--rubro2);background:color-mix(in srgb,var(--rubro2) 10%,var(--paper));padding:2px 4px}
+.atk{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.atk .cnt{display:flex;align-items:center;gap:6px;font-weight:600}
+.atk .cnt b{font-family:var(--f-disp);font-size:20px;min-width:1.2em;text-align:center;font-variant-numeric:tabular-nums}
+.atk .cnt .btn{padding:2px 9px;font-size:15px}
+.atk .cnt .btn:disabled{opacity:.4;cursor:not-allowed}
 .forma.cant{opacity:.6;padding:2px 4px}
 .mini{font-family:var(--f-ui);font-size:11px;font-weight:600;border:1px solid var(--ok);color:var(--ok);background:var(--card);padding:3px 8px;border-radius:2px;cursor:pointer;margin:6px 6px 0 0}
 .estc.lock{opacity:.75;background:repeating-linear-gradient(135deg,var(--bgk) 0 8px,var(--paper) 8px 10px)}
