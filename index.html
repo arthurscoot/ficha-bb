@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ficha de Brasas e Brasões</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="s-Golpe" viewBox="0 0 60 60"><polygon points="30,4 55,24 30,56 5,24" fill="var(--da)"/><polyline points="5,24 17,22 30,30 43,22 55,24" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><line x1="30" y1="30" x2="30" y2="56" stroke="#fff" stroke-opacity=".5" stroke-width="3"/></symbol>
+<symbol id="s-Roll" viewBox="0 0 60 60"><polygon points="30,4 55,30 30,56 5,30" fill="var(--dd)"/><line x1="5" y1="30" x2="55" y2="30" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><line x1="30" y1="4" x2="30" y2="56" stroke="#fff" stroke-opacity=".5" stroke-width="3"/></symbol>
+<symbol id="s-Pensamento" viewBox="0 0 60 60"><polygon points="30,5 56,52 4,52" fill="var(--de)"/><polyline points="4,52 30,38 56,52" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><line x1="30" y1="5" x2="30" y2="38" stroke="#fff" stroke-opacity=".5" stroke-width="3"/></symbol>
+<symbol id="s-Passiva" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="var(--dm)"/><circle cx="30" cy="30" r="11" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/></symbol>
+</defs>
+</svg>
+
+<header class="top"><div class="in">
+  <span class="brand">BRASAS E BRASÕES</span>
+  <select id="sel" aria-label="Ficha aberta"></select>
+  <button class="btn" id="bNova">Nova ficha</button>
+  <button class="btn" id="bDup">Duplicar</button>
+  <span class="sp"></span>
+  <button class="btn" id="bTema" title="Alternar tema">Tema: automático</button>
+  <button class="btn" id="bExp">Exportar</button>
+  <button class="btn" id="bImp">Importar</button>
+  <button class="btn" id="bDel">Apagar</button>
+  <span class="confirm" id="cDel">Apagar esta ficha? <button class="btn" id="bDelSim">Apagar</button><button class="btn" id="bDelNao">Cancelar</button></span>
+</div></header>
+
+<main class="wrap">
+<h1 id="hNome">Ficha de Personagem</h1>
+<p class="sub" id="hSub">Tudo é salvo automaticamente neste navegador.</p>
+
+<div class="grid">
+
+<section class="box s8"><div class="hd"><h2>IDENTIDADE</h2></div><div class="bd">
+  <div class="fields">
+    <label class="f w2"><span>Nome</span><input id="nome" data-k="nome"></label>
+    <label class="f"><span>Jogador</span><input id="jogador" data-k="jogador"></label>
+    <label class="f w2"><span>Conceito</span><input id="conceito" data-k="conceito" placeholder="Ex-guarda que foge de uma dívida com um clã."></label>
+    <label class="f"><span>Origem</span><select id="origem" data-k="origem"><option>Humano</option></select></label>
+    <label class="f"><span>Aspecto</span><select id="aspecto" data-k="aspecto"><option>Brutalista</option><option>Lâmina</option><option>Vidente</option></select></label>
+    <label class="f"><span>Segundo kit</span><select id="kit2" data-k="kit2"></select></label>
+    <label class="f"><span>Conto</span><select id="conto" data-k="conto"><option>Comum</option><option>Épico</option><option>Lendário</option></select></label>
+    <label class="f"><span>Herança (só 1 Corpo Aberto)</span><select id="heranca" data-k="heranca"></select></label>
+    <label class="f"><span>Âncora de afinidade</span><select id="ancora" data-k="ancora"><option value="">Nenhuma</option><option>Traição</option><option>Abandono</option><option>Raiva</option><option>Negligência</option><option>Fracasso</option></select></label>
+  </div>
+  <p class="hint" id="origemTraco"></p>
+</div></section>
+
+<section class="box s4"><div class="hd"><h2>VIDA</h2><span class="sp"></span><span class="note" id="vidaNota"></span></div><div class="bd">
+  <div class="stat">
+    <div class="num big"><span class="lbl">Disponível</span><b id="vDisp">0</b></div>
+    <div class="num"><span class="lbl">Máxima</span><b id="vMax">0</b></div>
+  </div>
+  <div class="fields" style="margin-top:10px">
+    <label class="f"><span>Ajuste da máxima</span><input type="number" id="vAjuste" data-k="vAjuste" data-num></label>
+    <label class="f"><span>Dano direto sofrido</span><input type="number" id="vDireto" data-k="vDireto" data-num min="0"></label>
+  </div>
+  <div class="grp">Ferimentos</div>
+  <table class="list"><thead><tr><th style="width:62px">GRAV.</th><th>ORIGEM / CONDIÇÃO</th><th></th></tr></thead><tbody id="ferList"></tbody></table>
+  <div class="addrow"><button class="btn" id="addFer">Adicionar Ferimento</button></div>
+  <p class="hint">Disponível = máxima − dano direto − Vida alocada nos Ferimentos.</p>
+  <p class="hint warnt" id="vidaCorpo" hidden>Corpo Aberto: ao chegar a Morrendo, morre na hora.</p>
+</div></section>
+
+<section class="box"><div class="hd"><h2>ESTOJOS NARRATIVOS E TRAÇOS</h2><span class="sp"></span><span class="note" id="capNota"></span></div><div class="bd">
+  <div class="rbar"><button class="btn" id="bCena">Nova cena (encher estojos)</button><button class="btn" id="bTracos">Novo combate (liberar Traços)</button></div>
+  <div class="est3" id="narr"></div>
+  <p class="hint">Cada Traço é usado uma vez por combate. Fora da própria natureza, rola um dado abaixo (d10→d8, d8→d4, d4→+1). Um Traço corrompido fica vazio e aumenta os espaços de Culpa.</p>
+</div></section>
+
+<section class="box"><div class="hd"><h2>COMBATE</h2><span class="sp"></span><span class="note">verde = dá para usar agora · clique de novo para desfazer</span></div><div class="bd">
+  <details class="aspbox" id="aspBox"></details>
+  <div class="rbar">
+    <span class="rd" id="rodada">Fora de combate</span>
+    <button class="btn pri" id="bIni">Iniciar combate</button>
+    <button class="btn" id="bRod">Nova rodada</button>
+    <button class="btn" id="bTurno">Encerrar turno</button>
+    <button class="btn" id="bFim">Encerrar combate</button>
+    <label class="f" style="flex-direction:row;align-items:center;gap:6px"><span>Iniciativa</span><input type="number" id="inic" data-k="inic" data-num style="width:70px"></label>
+    <label class="f" style="flex-direction:row;align-items:center;gap:6px" id="brasaL"><span>Brasa Épica em</span><select id="brasa" data-k="brasa" style="width:auto"><option value="DA">DA</option><option value="DD">DD</option><option value="DE">DE</option></select></label>
+  </div>
+  <div class="cmb" id="comb"></div>
+  <div class="log" id="log"></div>
+  <p class="hint">“Nova rodada” aplica +2 DA +2 DD +2 DE +1 DM, a passiva do Aspecto e as condições (Ofuscado não recebe DD). Tonto, Premeditado, Morrendo e Desmaiado bloqueiam o gasto dos dados afetados; “Encerrar turno” termina o Tonto. Clique numa habilidade com contorno verde para gastar o custo; se faltar dado do tipo e o estojo esvaziar, o DM completa. Para assassinar um dado, ajuste os estojos à mão logo depois do recebimento.</p>
+</div></section>
+
+<section class="box s6"><div class="hd"><h2>CONDIÇÕES</h2></div><div class="bd">
+  <div id="conds"></div>
+  <div class="cact" id="condAct"></div>
+</div></section>
+
+<section class="box s6"><div class="hd"><h2>EQUIPAMENTO</h2></div><div class="bd">
+  <div class="fields">
+    <label class="f"><span>Arma</span><select id="arma" data-k="arma"></select></label>
+    <label class="f"><span>Brutalidade do ataque</span><select id="brut" data-k="brut"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+  </div>
+  <div id="armaInfo"></div>
+  <div class="fields" style="margin-top:10px">
+    <label class="f w2"><span>Arma improvisada ou outra arma</span><input id="armaOutra" data-k="armaOutra" placeholder="Nome, dano e propriedade, combinados com o mestre"></label>
+  </div>
+  <label class="f" style="margin-top:10px"><span>Itens</span><textarea id="itens" data-k="itens"></textarea></label>
+</div></section>
+
+<section class="box"><div class="hd"><h2>HABILIDADES</h2><span class="sp"></span><span class="note" id="espNota"></span></div><div class="bd">
+  <div class="meter"><span class="lbl">Espaços de habilidade</span><div class="bar"><i id="espBar"></i></div><b id="espTxt" style="font-variant-numeric:tabular-nums"></b></div>
+  <div id="habs"></div>
+  <div class="addrow"><input id="habIn" list="habDL" placeholder="Buscar habilidade avulsa pelo nome"><datalist id="habDL"></datalist><button class="btn pri" id="habAdd">Adicionar</button></div>
+  <p class="hint" id="habMsg"></p>
+</div></section>
+
+<section class="box"><div class="hd"><h2>ECOS</h2><span class="sp"></span><span class="note" id="ecoNota"></span></div><div class="bd">
+  <div class="meter"><span class="lbl">Espaços de Culpa</span><div class="bar"><i id="culBar"></i></div><b id="culTxt" style="font-variant-numeric:tabular-nums"></b></div>
+  <div id="ecos"></div>
+  <div class="addrow"><select id="ecoIn" style="flex:1;min-width:180px"></select><button class="btn pri" id="ecoAdd">Adicionar eco</button></div>
+  <p class="hint">Reverberar custa 1 DM mais o valor do eco em dados do momento. Com afinidade na Âncora, os ecos dela custam 1 dado a menos. Resistir custa o dobro do valor em DE.</p>
+</div></section>
+
+<section class="box"><div class="hd"><h2>HISTÓRIA E ANOTAÇÕES</h2></div><div class="bd">
+  <div class="fields">
+    <label class="f"><span>História</span><textarea id="historia" data-k="historia" style="min-height:120px"></textarea></label>
+    <label class="f"><span>Culpas e traumas</span><textarea id="culpas" data-k="culpas" style="min-height:120px"></textarea></label>
+    <label class="f"><span>Anotações</span><textarea id="notas" data-k="notas" style="min-height:120px"></textarea></label>
+  </div>
+</div></section>
+
+</div>
+</main>
+
+<dialog id="dlg">
+  <h2 style="font-family:var(--f-disp);font-size:18px;margin:0 0 6px" id="dlgT">Exportar</h2>
+  <p class="hint" id="dlgH" style="margin-bottom:8px"></p>
+  <textarea id="dlgTx"></textarea>
+  <div class="addrow" style="justify-content:flex-end">
+    <input type="file" id="dlgFile" accept=".json,application/json" style="flex:1">
+    <button class="btn" id="dlgCopy">Copiar</button>
+    <button class="btn" id="dlgSave">Baixar arquivo</button>
+    <button class="btn pri" id="dlgOk">Importar</button>
+    <button class="btn" id="dlgClose">Fechar</button>
+  </div>
+  <p class="hint" id="dlgMsg"></p>
+</dialog>
+<script src="js/dados.js"></script>
+<script src="js/ficha.js"></script>
+</body>
+</html>
