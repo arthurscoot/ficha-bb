@@ -180,6 +180,7 @@ function stateOf(id,usado,epLock){const c=F.comb,sel=selOf();
  if(sel.ids.includes(id))return{sel:true};
  if(!c.on||c.uso)return{};if(epLock)return{why:'liberada no Conto Épico'};const b=block(usado);if(b)return{why:b};
  const m=momOf(id);if(!selVazia(sel)&&selMom(sel)!==m)return{off:true};
+ if(!selVazia(sel)&&(id.startsWith('eco:')||sel.ids.some(x=>x.startsWith('eco:'))))return{off:true};
  if(m==='reação'&&sel.ids.length){const df=defOf(id);if(df&&sel.ids.some(x=>{const o=defOf(x);return o&&o!==df}))return{off:true}}
  if(id==='Colheita'){const ks=['DA','DD','DE'].filter(k=>c[k]>=10&&!lockedBy(k));return ks.length?{ok:true,ks}:{why:'nenhum estojo com 10 ou mais'}}
  const p=planIds([...sel.ids,id],sel.colh,2*(sel.vant+sel.brut));return p.why?{why:!selVazia(sel)?p.why+' para somar à seleção':p.why}:{ok:true}}
@@ -211,7 +212,7 @@ function renderAcao(){const c=F.comb,sel=selOf(),el=$('acao');
   el.innerHTML=`<div class="tt">${esc(MOMN[selMom(sel)])} · ${n} selecionada${n>1?'s':''}<small>${esc(selLbl(sel))} · ${esc(p.why?p.why:(fmtD(p.d)||'sem custo'))}</small></div><button class="btn pri" id="aUsar"${p.why?' disabled':''}>Usar</button><button class="btn" id="aLimpar">Limpar</button>`;el.hidden=false;return}
  el.hidden=true}
 function renderAtk(){const c=F.comb,sel=selOf(),el=$('atk');if(!el)return;
- const can=t=>{if(!c.on||c.uso)return false;if(!selVazia(sel)&&selMom(sel)!=='ataque')return false;return!planIds(sel.ids,sel.colh,2*(sel.vant+sel.brut+1)).why};
+ const can=t=>{if(!c.on||c.uso)return false;if(!selVazia(sel)&&selMom(sel)!=='ataque')return false;if(sel.ids.some(x=>x.startsWith('eco:')))return false;return!planIds(sel.ids,sel.colh,2*(sel.vant+sel.brut+1)).why};
  const u=c.uso&&(c.uso.vant||c.uso.brut);
  el.className='ab atk'+(u?' used':(sel.vant||sel.brut)?' sel':'');
  const v=u?c.uso.vant:sel.vant,b=u?c.uso.brut:sel.brut,ok=can();
