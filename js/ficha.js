@@ -10,6 +10,7 @@ const ORIG={Humano:{vida:10,traco:'Adaptável. No início de cada cena, pode tra
 const NARR=[['chama','Chama','Pelo que luta. Paga Golpes fora do combate; vira DA.','var(--da)'],['fumaca','Fumaça','O que teme. Paga Rolls fora do combate; vira DD.','var(--dd)'],['lume','Lume','O que o comove. Paga Pensamentos fora do combate; vira DE.','var(--de)']];
 const TRT=[['marcante','MARCANTE','d8','d10'],['comum1','COMUM','d4','2d4'],['comum2','COMUM','d4','2d4'],['assumido','ASSUMIDO','d4','2d4']];
 const HAB=Object.fromEntries(D.hab.map(h=>[h.nome,h]));
+const COND=Object.fromEntries(D.cond.map(c=>[c.nome,c]));
 const ECO=Object.fromEntries(D.ecos.map(e=>[e.nome,e]));
 const ARMA=Object.fromEntries(D.armas.map(a=>[a.nome,a]));
 const KEY='brasas-fichas-v1';
@@ -50,7 +51,7 @@ function renderTop(){
  $('hSub').textContent=[F.origem,F.aspecto,F.kit2,'Conto '+F.conto].filter(Boolean).join(' · ');
 }
 function renderIdent(){
- opts($('kit2'),D.subs.map(s=>[s.nome,`${s.nome} (afinidade ${s.afin})`]).concat([['Kit Próprio','Kit Próprio']]),F.kit2);
+ opts($('kit2'),D.subs.map(s=>[s.nome,s.nome]).concat([['Kit Próprio','Kit Próprio']]),F.kit2);
  const hs=['', ...new Set(D.hab.filter(h=>h.tipo==='heranca').map(h=>h.grupo.replace('Herança · ','')))];
  opts($('heranca'),hs.map(h=>[h,h||'Nenhuma']),F.heranca);
  opts($('arma'),[['','Sem arma da lista'],...D.armas.map(a=>a.nome)],F.arma);
@@ -68,11 +69,11 @@ function grow(t){t.style.height='';if(!t.value)return;t.style.height='auto';t.st
 function renderNarr(){
  const tot=F.cap.chama+F.cap.fumaca+F.cap.lume,alvo=epico()?20:14,mx=epico()?12:8;
  const bad=NARR.some(([k])=>F.cap[k]<2||F.cap[k]>mx);
- $('capNota').innerHTML=`${tot} de ${alvo} pontos · mínimo 2, máximo ${mx} em cada ${tot===alvo&&!bad?'<span class="okt">✓</span>':'<span class="warnt">· confira</span>'}`;
+ $('capNota').innerHTML=`${tot} de ${alvo} pontos<span class="ex"> · mínimo 2, máximo ${mx} em cada</span> ${tot===alvo&&!bad?'<span class="okt">✓</span>':'<span class="warnt">· confira</span>'}`;
  $('narr').innerHTML=NARR.map(([k,n,w,c])=>{
   const tr=F.tracos[k];
   return`<div class="estn"><div class="t"><span class="nm">${n.toUpperCase()}</span><span class="lbl">Cap.</span><input type="number" min="0" max="12" value="${F.cap[k]}" data-cap="${k}" aria-label="Capacidade de ${n}"></div>
-  <p class="what">${w}</p>
+  <p class="what ex">${w}</p>
   <div class="pips">${pips(F.cap[k],Math.min(F.cur[k],F.cap[k]),c,'data-narr-'+k)}</div>
   <div class="grp" style="margin-top:10px">Traços ${n==='Lume'?'do':'da'} ${n}</div>
   ${TRT.map(([s,l,d1,d2])=>{const t=tr[s]||{};return`<div class="tr${t.cor?' cor':''}"><span class="tg">${l}<b>${epico()?d2:d1}</b></span><textarea rows="1" data-tr="${k}.${s}" data-f="t" placeholder="${s==='assumido'?'Vem de uma habilidade':'Frase sobre quem o personagem é'}" aria-label="Traço ${l}">${esc(t.t)}</textarea><label title="Usado neste combate"><input type="checkbox" ${t.u?'checked':''} data-tr="${k}.${s}" data-f="u">usado</label><label title="Traço corrompido"><input type="checkbox" ${t.cor?'checked':''} data-tr="${k}.${s}" data-f="cor">corr.</label></div>`}).join('')}
@@ -170,7 +171,7 @@ function baseCost(b,ids){const t={};if(!b)return t;ids=ids||selOf().ids;const L=
  if(o.rev){const ec=ids.filter(i=>i.startsWith('eco:'));if(!(ec.length&&ec.every(i=>i.endsWith(':Estendida'))))t.DM=(t.DM||0)+1;continue}
  if(b.mom==='ataque'){t.DA=(t.DA||0)+1+2*(x.v||0)+2*(x.b||0);continue}
  t[o.k]=(t[o.k]||0)+(o.fix?1:x.n);if(o.plus)for(const k in o.plus)t[k]=(t[k]||0)+o.plus[k]}return t}
-function baseRoll(mom,n,x){const o=BASE[mom].L[n];if(o.rev)return'';if(o.none)return'acerto automático';if(mom==='ataque')return o.auto?'sempre atinge':`${1+(x.v||0)}d10`;
+function baseRoll(mom,n,x){const o=BASE[mom].L[n];if(o.rev)return'';if(o.none)return'acerto automático';if(mom==='ataque'){if(o.auto)return'sempre atinge';const sl=selOf(),t=sl.base&&sl.base.a[n]?bonusTurno(sl).v:0;return`${1+Math.max(t,x.v||0)}d10`}
  if(!o.d)return'';const q=o.fix?1:x.n;return`${q}${o.d}${q>1?(o.soma?' somados':''):''}`}
 function baseLbl(b){if(!b)return[];return Object.entries(b.a).map(([n,x])=>{let t=n;if(b.mom==='ataque'){if(x.v)t+=` +${x.v} Vant.`;if(x.b)t+=` +${x.b} Brut.`}else if(!BASE[b.mom].L[n].fix&&!BASE[b.mom].L[n].none)t+=` ${x.n} ${BASE[b.mom].L[n].k}`;const r=baseRoll(b.mom,n,x);return r?`${t} (${r})`:t})}
 function baseBlock(mom,n){if(F.conds.Desmaiado)return'Desmaiado';if(mom==='reação'){if(F.conds.Ofuscado&&/Bloqueio|Contra/.test(n))return'Ofuscado';if(F.conds.Agarrado&&n==='Esquiva')return'Agarrado'}return''}
@@ -204,11 +205,11 @@ function stateOf(id,usado,epLock){const c=F.comb,sel=selOf();
  const m=momOf(id),isE=id.startsWith('eco:'),rv=!!sb.a.Reverberar;
  if(isE){if(!rv||sb.mom!==m)return{};if(sel.ids.length)return{off:true}}
  else{if(rv)return{};if(m!=='especial'&&sb.mom!==m)return{};if(!golpeOk(id,sb))return{}}
- if(epLock)return{why:'liberada no Conto Épico'};const b=block(usado);if(b)return{why:b};if(id==='Atingida Intensiva'&&(c.cargas||0)<4)return{why:'precisa de 4 cargas'};
+ if(epLock)return{why:'liberada no Conto Épico'};const b=block(usado);if(b)return{why:b};
  if(m==='reação'){const df=defOf(id);if(df&&(sel.ids.some(x=>{const o=defOf(x);return o&&o!==df})||(sel.base&&!(df in Object.fromEntries(Object.keys(sel.base.a).map(n=>[n.toLowerCase(),1]))))))return{off:true}}
  if(id==='Colheita'){const ks=['DA','DD','DE'].filter(k=>c[k]>=10&&!lockedBy(k));return ks.length?{ok:true,ks}:{why:'nenhum estojo com 10 ou mais'}}
  const p=planIds([...sel.ids,id],sel.colh,baseCost(sel.base,[...sel.ids,id]));return p.why?{why:!selVazia(sel)?p.why+' para somar à seleção':p.why}:{ok:true}}
-function useState(h){const r=useState0(h);if(h.nome==='Atingida Intensiva'){const c=F.comb,n=(c.cargas||0),pode=c.on&&!c.uso&&n<4&&c.cargaRod!==c.rodada&&c.DE>0&&!lockedBy('DE');r.html=(r.html||'')+`<div class="cargas">${[0,1,2,3].map(i=>`<span class="cg${i<n?' on':''}"></span>`).join('')}<button class="mini" data-carga="1"${pode?'':' disabled'}>Carregar · 1 DE</button></div>`}return r}
+function useState(h){const r=useState0(h);if(h.nome==='Atingida Intensiva'){const n=(F.comb.cargas||0);r.html=(r.html||'')+`<div class="cargas">${[0,1,2].map(i=>`<span class="cg${i<n?' on':''}"></span>`).join('')}<small>${n>=3?'cheia: 3 DA':'carregar: 1 DE'}</small></div>`}return r}
 function useState0(h){const interactive=!(h.cat==='Passiva'&&(!h.custo||h.custo==='sem custo'));
  if(!interactive)return{cls:'',attr:'',html:''};
  const a=stateOf(h.nome,h.usado,h.epica&&!epico()),id=esc(h.nome),at=` data-use="${id}" role="button" tabindex="0"`;
@@ -224,7 +225,7 @@ function ecoUse(e,f,v,k){const id=`eco:${e.nome}:${f.forma}`,a=stateOf(id,'');co
  if(a.used)return{cls:' used',attr:' title="Usada"'};if(a.sel)return{cls:' sel',attr:at};if(a.ok)return{cls:' can',attr:at};
  return{cls:(a.why||a.off)?' cant':'',attr:a.why?` title="${esc(a.why)}"`:''}}
 function costFor(id){if(id.startsWith('eco:')){const[,n,fo]=id.split(':');const e=ECO[n],f=e.formas.find(x=>x.forma===fo);const v=Math.max(0,f.valor-(F.ancora===e.ancora?1:0));const k={'ataque':'DA','reação':'DD','estratégia':'DE'}[f.momento||e.momento];return{cs:v?v+' '+k:'sem custo',usado:'',lbl:`${n} (${fo})`}}
- const h=HAB[id];return{cs:h.custo,usado:h.usado,lbl:id,ep:h.epica&&!epico()}}
+ const h=HAB[id];if(id==='Atingida Intensiva'){const n=F.comb.cargas||0;return{cs:n>=3?'3 DA':'1 DE',usado:h.usado,lbl:n>=3?id+' (3 cargas)':`${id} (carga ${n+1}/3)`,ep:h.epica&&!epico()}}return{cs:h.custo,usado:h.usado,lbl:id,ep:h.epica&&!epico()}}
 function toggleSel(id){const c=F.comb,sel=selOf();
  if(sel.ids.includes(id)){sel.ids=sel.ids.filter(x=>x!==id);if(id==='Colheita')sel.colh='';rerUse();return}
  if(c.uso){log('Confirme (Ok) ou desfaça o uso anterior antes de selecionar de novo.');return}
@@ -252,12 +253,17 @@ function renderAtk(){const c=F.comb,sel=selOf(),el=$('atk');if(!el)return;
    const r=baseRoll(tab,n,x);if(r)ctl+=`<small>${esc(r)}</small>`}
   chips+=`<span class="bc${on?' on':''}"><button class="btn a" data-bx="a:${esc(n)}"${dis(!can)}>${esc(n)}</button>${ctl}</span>`}
  const cost=fmtD(Object.fromEntries(Object.entries(baseCost(b&&b.mom===tab?b:null,ub?u.ids:sel.ids)).map(([k,v])=>[k,-v])));
- el.innerHTML=`<div class="hd"><span class="nm">${shape({ataque:'Golpe','reação':'Roll','estratégia':'Pensamento'}[tab])}Ação do turno</span>
+ el.innerHTML=`<div class="hd">
  <span class="tabs">${['ataque','reação','estratégia'].map(t=>`<button class="btn${t===tab?' on':''}" data-bx="t:${t}"${dis(u||(!selVazia(sel)&&selMom(sel)!==t))}>${MOMN[t]}</button>`).join('')}</span></div>
- <div class="chips">${chips}</div>${(()=>{const sb=ub?{base:ub,ids:u.ids}:sel;if(tab!=='ataque'||!sb.base||sb.base.mom!=='ataque'||sb.base.a.Reverberar)return'';const t=bonusTurno(sb),a=ARMA[F.arma],dn=a?a.dano[Math.min(5,t.b)]:'';return`<div class="bt">Neste ataque: <b>Vantagem ${t.v}</b> · <b>Brutalidade ${t.b}</b>${dn?` · dano ${esc(dn)}`:''}${t.src.length?`<small> (inclui ${esc([...new Set(t.src)].join(', '))})</small>`:''}</div>`})()}${cost?`<span class="tot">${ub?'Gasto':'Custo'}: ${esc(cost)}</span>`:''}`}
-function bonusTurno(sel){const b=sel.base,r={v:0,b:0,src:[]};if(!b||b.mom!=='ataque'||b.a.Reverberar)return r;const x=Object.values(b.a)[0];r.v+=x.v||0;r.b+=x.b||0;
+ <div class="chips">${chips}</div>${(()=>{const sb=ub?{base:ub,ids:u.ids}:sel;if(tab!=='ataque'||!sb.base||sb.base.mom!=='ataque'||sb.base.a.Reverberar)return'';const t=bonusTurno(sb),a=ARMA[F.arma],nm=Object.keys(sb.base.a)[0],o=BASE.ataque.L[nm],semB=!o.b,bb=semB?0:t.b,dn=a&&!semB?a.dano[Math.min(5,bb)]:(semB?'sem dano':'');
+ return`<div class="bt"><div class="bh">Neste ataque · ${esc(nm)}</div><div class="bg"><div><small>VANTAGEM</small><b>${t.v}</b></div><div><small>BRUTALIDADE</small><b>${semB?'—':bb}</b></div><div><small>ROLAR</small><b>${o.auto?'—':(1+t.v)+'d10'}</b></div><div><small>DANO</small><b>${esc(dn||'—')}</b></div></div>${t.ex.length?`<p>${t.ex.map(esc).join(' · ')}</p>`:''}${t.src.length?`<p class="src">Inclui: ${esc([...new Set(t.src)].join(', '))}</p>`:''}</div>`})()}${cost?`<span class="tot">${ub?'Gasto':'Custo'}: ${esc(cost)}</span>`:''}`}
+function bonusTurno(sel){const b=sel.base,r={v:0,b:0,src:[],ex:[]};if(!b||b.mom!=='ataque'||b.a.Reverberar)return r;const x=Object.values(b.a)[0];r.v+=x.v||0;r.b+=x.b||0;
  const a=ARMA[F.arma];if(a&&a.bonus&&F.aspecto&&a.bonus.includes(F.aspecto)){const m=a.bonus.match(new RegExp(F.aspecto+':?\\s*\\+(\\d+)\\s*(Vantagem|Brutalidade)'));if(m){r[m[2][0]==='V'?'v':'b']+=+m[1];r.src.push(F.arma)}}
  for(const id of sel.ids){const h=HAB[id];if(!h)continue;for(const fr of h.efeito.split(/(?<=\.)\s/)){if(/aliado|criatura/i.test(fr))continue;for(const m of fr.matchAll(/\+(\d+)\s*(Vantagem|Brutalidade)/g)){r[m[2][0]==='V'?'v':'b']+=+m[1];r.src.push(id)}}}
+ for(const k in F.conds){const cd=COND[k];if(!cd)continue;for(const fr of cd.efeito.split(/(?<=\.)\s/)){if(/contra o personagem/i.test(fr))continue;for(const m of fr.matchAll(/\+(\d+)\s*(Vantagem|Brutalidade)/g)){r[m[2][0]==='V'?'v':'b']+=+m[1];r.src.push(k)}}}
+ r.ex=[];if(F.conds.Orientado)r.ex.push('+1d4 no resultado (Orientado)');
+ if(sel.ids.includes('Atingida Intensiva')&&(F.comb.cargas||0)>=3)r.ex.push('dano ×1,5 e alvo Tonto (Atingida Intensiva)');
+ if(F.conds.Inflamado)r.ex.push('dano ×1,5 (Inflamado)');if(F.conds.Esgotado)r.ex.push('dano à metade (Esgotado)');
  return r}
 function baseClick(v){const c=F.comb,sel=selOf();if(c.uso){log('Confirme (Ok) ou desfaça o uso anterior antes.');return}
  const[op,n]=[v.slice(0,v.indexOf(':')),v.slice(v.indexOf(':')+1)];
@@ -271,7 +277,7 @@ function baseClick(v){const c=F.comb,sel=selOf();if(c.uso){log('Confirme (Ok) ou
  if(nb&&(op==='a'?nb.a[n]:1)&&!baseOk(nb)&&!(op.endsWith('-'))){log('Dados insuficientes ou ação incompatível com a seleção.');return}
  sel.base=nb;const rv=!!(nb&&nb.a.Reverberar);sel.ids=pruneIds(nb,sel.ids);if(!sel.ids.includes('Colheita'))sel.colh='';rerUse()}
 function usarSel(){const c=F.comb,sel=selOf(),p=planIds(sel.ids,sel.colh,baseCost(sel.base));if(p.why){log(p.why);return}
- const vaz={...c.vaz};mudar(p.d);const n=selLbl(sel);const bb=sel.base&&sel.base.mom==='ataque'?Object.values(sel.base.a)[0].b:0;c.tab=selMom(sel)||c.tab;c.uso={ids:[...sel.ids],d:p.d,vaz,ex:{},base:sel.base,lbl:n,cargas:c.cargas||0};if(sel.ids.includes('Atingida Intensiva'))c.cargas=0;const bt=bonusTurno(sel);if(bt.b||bb){F.brut=String(Math.min(5,bt.b));try{$('brut').value=F.brut;renderArma()}catch(e){}}c.sel={ids:[],colh:'',base:null};rerUse();log(`${n}: ${fmtD(p.d)||'sem custo'}.`)}
+ const vaz={...c.vaz};mudar(p.d);const n=selLbl(sel);const bb=sel.base&&sel.base.mom==='ataque'?Object.values(sel.base.a)[0].b:0;c.tab=selMom(sel)||c.tab;c.uso={ids:[...sel.ids],d:p.d,vaz,ex:{},base:sel.base,lbl:n,cargas:c.cargas||0};if(sel.ids.includes('Atingida Intensiva'))c.cargas=(c.cargas||0)>=3?0:(c.cargas||0)+1;const bt=bonusTurno(sel);if(bt.b||bb){F.brut=String(Math.min(5,bt.b));try{$('brut').value=F.brut;renderArma()}catch(e){}}c.sel={ids:[],colh:'',base:null};rerUse();log(`${n}: ${fmtD(p.d)||'sem custo'}.`)}
 function desfazer(){const c=F.comb,u=c.uso;if(!u)return;mudar(Object.fromEntries(Object.entries(u.d).map(([k,v])=>[k,-v])));c.vaz=u.vaz;if(u.cargas!=null)c.cargas=u.cargas;c.uso=null;c.sel={ids:[],colh:'',base:null};rerUse();log('Uso desfeito, os dados voltaram.')}
 function extra(t){const u=F.comb.uso;if(!u)return;let d={};
  if(t==='volta'){d={DD:1};u.ex.volta=true}
@@ -301,7 +307,7 @@ document.addEventListener('click',e=>{
  if(d.colh){selOf().colh=d.colh;rerUse();return}
  if(b.id==='aUsar'){usarSel();return}
  if(d.bx){baseClick(d.bx);return}
- if(d.carga){const c=F.comb;if(!c.on||c.uso||c.cargaRod===c.rodada||(c.cargas||0)>=4||c.DE<1)return;mudar({DE:-1});c.cargas=(c.cargas||0)+1;c.cargaRod=c.rodada;rerUse();log(`Atingida Intensiva: carga ${c.cargas}/4 (−1 DE).`);return}
+
  if(b.id==='aLimpar'){F.comb.sel={ids:[],colh:'',base:null};rerUse();return}
  if(b.id==='aDesf'){desfazer();return}
  if(b.id==='aOk'){F.comb.uso=null;rerUse();return}
@@ -337,7 +343,8 @@ $('bRod').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.'
  const dg=Math.min(dmMax(),c.DM+1)-c.DM;c.DM+=dg;out.push(`+${dg} DM`);c.vaz={};c.uso=null;c.sel={ids:[],colh:'',base:null};
  const lk=['DA','DD','DE','DM'].map(k=>[k,lockedBy(k)]).filter(x=>x[1]);if(lk.length)out.push('bloqueado até encerrar o turno: '+lk.map(x=>x[0]+' ('+x[1]+')').join(', '));
  save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log(`Rodada ${c.rodada}: ${out.join(', ')}.`)};
-$('bFim').onclick=()=>{Object.assign(F.comb,{cargas:0,cargaRod:0,on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',base:null}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
+{const setA=v=>{document.body.classList.toggle('ajuda',v);$('bAjuda').setAttribute('aria-pressed',v)};let a0=false;try{a0=localStorage.getItem('brasas-ajuda')==='1'}catch(e){}setA(a0);$('bAjuda').onclick=()=>{const v=!document.body.classList.contains('ajuda');setA(v);try{localStorage.setItem('brasas-ajuda',v?'1':'0')}catch(e){}}}
+$('bFim').onclick=()=>{Object.assign(F.comb,{cargas:0,on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',base:null}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
 $('habAdd').onclick=addHab;$('habIn').addEventListener('keydown',e=>{if(e.key==='Enter')addHab()});
 function addHab(){const n=$('habIn').value.trim();const h=HAB[n];
  if(!h){$('habMsg').textContent='Não encontrei essa habilidade. Escolha um nome da lista.';return}
