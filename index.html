@@ -73,8 +73,7 @@
   <p class="hint">Cada Traço é usado uma vez por combate. Fora da própria natureza, rola um dado abaixo (d10→d8, d8→d4, d4→+1). Um Traço corrompido fica vazio e aumenta os espaços de Culpa.</p>
 </div></section>
 
-<section class="box"><div class="hd"><h2>COMBATE</h2><span class="sp"></span><span class="note">verde = dá para usar agora · clique de novo para desfazer</span></div><div class="bd">
-  <details class="aspbox" id="aspBox"></details>
+<section class="box"><div class="hd"><h2>COMBATE</h2><span class="sp"></span><span class="note">verde: dá para usar · amarelo: selecionada</span></div><div class="bd">
   <div class="rbar">
     <span class="rd" id="rodada">Fora de combate</span>
     <button class="btn pri" id="bIni">Iniciar combate</button>
@@ -86,7 +85,7 @@
   </div>
   <div class="cmb" id="comb"></div>
   <div class="log" id="log"></div>
-  <p class="hint">“Nova rodada” aplica +2 DA +2 DD +2 DE +1 DM, a passiva do Aspecto e as condições (Ofuscado não recebe DD). Tonto, Premeditado, Morrendo e Desmaiado bloqueiam o gasto dos dados afetados; “Encerrar turno” termina o Tonto. Clique numa habilidade com contorno verde para gastar o custo; se faltar dado do tipo e o estojo esvaziar, o DM completa. Para assassinar um dado, ajuste os estojos à mão logo depois do recebimento.</p>
+  <p class="hint">Selecione as habilidades do mesmo momento e clique em Usar. Se faltar dado e o estojo esvaziar, o DM completa.</p>
 </div></section>
 
 <section class="box s6"><div class="hd"><h2>CONDIÇÕES</h2></div><div class="bd">
@@ -130,6 +129,8 @@
 
 </div>
 </main>
+
+<div class="acao" id="acao" hidden></div>
 
 <dialog id="dlg">
   <h2 style="font-family:var(--f-disp);font-size:18px;margin:0 0 6px" id="dlgT">Exportar</h2>
