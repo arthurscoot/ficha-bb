@@ -60,7 +60,7 @@ function renderIdent(){
 }
 function renderVida(){
  const mx=vidaMax(),sf=F.fer.reduce((a,f)=>a+(+f.g||0),0),disp=mx-(+F.vDireto||0)-sf;
- $('vidaCorpo').hidden=!F.heranca; $('vMax').textContent=mx;$('vDisp').textContent=disp;
+ $('vidaCorpo').hidden=!F.heranca; $('vMax').textContent=mx;$('vDisp').textContent=disp;$('cvMax').textContent=mx;$('cvDisp').textContent=disp;$('cvFer').innerHTML=F.fer.length?F.fer.map(f=>`Ferimento ${esc(f.g)}${f.d?' · '+esc(f.d):''}`).join('<br>'):'';
  $('vidaNota').textContent=`${F.origem} ${ORIG[F.origem]?.vida} + ${F.aspecto} ${ASP[F.aspecto].vida}${epico()?' + Épico '+ASP[F.aspecto].vida:''}${F.habs.includes('Vidro Temperado')?' − 5 Vidro Temperado':''}`;
  $('ferList').innerHTML=F.fer.map((f,i)=>`<tr><td><input type="number" min="0" value="${esc(f.g)}" data-fer="${i}" data-f="g"></td><td><input value="${esc(f.d)}" data-fer="${i}" data-f="d" placeholder="Ex.: corte no braço, Sangrando 1"></td><td><button class="x" data-ferx="${i}" aria-label="Remover">×</button></td></tr>`).join('')||`<tr><td colspan="3" style="color:var(--mute);font-size:14px">Nenhum Ferimento.</td></tr>`;
 }
@@ -86,22 +86,24 @@ function renderComb(){
  $('rodada').textContent=c.on?`Rodada ${c.rodada}`:'Fora de combate';
 
  $('brasaL').hidden=!epico();
- $('comb').innerHTML=CMB.map(([k,l,col,bg])=>{const mx=k==='DM'?dmMax():20;const v=Math.min(c[k],mx);
+ const H=CMB.map(([k,l,col,bg])=>{const mx=k==='DM'?dmMax():20;const v=Math.min(c[k],mx);
   const vz=F.aspecto==='Lâmina'&&k!=='DM'?`<button class="tag${c.vaz[k]?' on':''}" data-vaz="${k}" title="Esvaziado nesta rodada: recebe o dobro na próxima">esvaziado</button>`:'';
   const lk=lockedBy(k);
   return`<div class="estc${lk?' lock':''}" style="--pc:${col};--bgk:${bg}"><div class="t"><span>${l} · ${k}</span><b>${v}</b><span class="lbl">/&nbsp;${mx}</span>${lk?`<span class="lk">BLOQUEADO · ${esc(lk.toUpperCase())}</span>`:''}</div><div class="r2">${vz}<span class="sp"></span><span class="ctl"><button class="btn" data-dec="${k}" aria-label="Gastar 1 ${k}"${lk?' disabled':''}>−</button><button class="btn" data-inc="${k}" aria-label="Receber 1 ${k}">+</button></span></div>
   <div class="pips">${pips(mx,v,col,'data-cmb-'+k,mx===20?10:0).replace(/<button class="pip/g,lk?'<button disabled class="pip':'<button class="pip')}</div></div>`}).join('');
+ $('comb').innerHTML=H;$('combF').innerHTML=H;
 }
 function renderConds(){
  const grupos=[...new Set(D.cond.map(c=>c.grupo))];
- $('conds').innerHTML=grupos.map(g=>`<div class="cgrp">${esc(g)}</div><div class="chips">${D.cond.filter(c=>c.grupo===g).map(c=>`<button class="chip${g==='Benefícios'?' ben':''}${F.conds[c.nome]?' on':''}" data-cond="${esc(c.nome)}" title="${esc(c.efeito)}">${esc(c.nome)}</button>`).join('')}</div>`).join('');
+const CH=grupos.map(g=>`<div class="cgrp">${esc(g)}</div><div class="chips">${D.cond.filter(c=>c.grupo===g).map(c=>`<button class="chip${g==='Benefícios'?' ben':''}${F.conds[c.nome]?' on':''}" data-cond="${esc(c.nome)}" title="${esc(c.efeito)}">${esc(c.nome)}</button>`).join('')}</div>`).join('');
+ $('conds').innerHTML=CH;$('conds2').innerHTML=CH;
  const at=D.cond.filter(c=>F.conds[c.nome]);
  $('condAct').innerHTML=at.map(c=>`<div><b>${esc(c.nome.replace(' X',''))}</b>${/ X$/.test(c.nome)?`<input value="${esc(F.conds[c.nome].x||'')}" data-condx="${esc(c.nome)}" placeholder="X" aria-label="Valor">`:''} ${esc(c.efeito)}</div>`).join('');
 }
-function card(h,rm){
+function card(h,rm,live){
  const locked=h.epica&&!epico();
  const fr=h.traco?`<p class="fr"><span class="lbl">Traço da habilidade</span> <i>“${esc(h.traco.frase)}”</i> <span class="pill o">${esc(h.traco.custo)}</span> ${esc(h.traco.bonus)}</p>`:'';
- const u=useState(h);
+ const u=live?useState(h):{cls:'',attr:'',html:''};
  return`<div class="ab${u.cls}"${u.attr}><div class="h"><span class="nm">${shape(h.cat)}${esc(h.nome)}</span>${h.epica?'<span class="pill ep">ÉPICA</span>':''}${locked?'<span class="pill lock">liberada no Conto Épico</span>':''}${pillCost(h.custo)}${h.usado?`<span class="pill o">usado com ${esc(h.usado.replace(/^com /,''))}</span>`:''}${h.esp?`<span class="pill o">${h.esp} ${h.esp>1?'espaços':'espaço'}</span>`:''}${rm?`<button class="x" data-habx="${esc(h.nome)}" aria-label="Remover">×</button>`:''}</div>
  <p>${esc(h.efeito)}</p>${fr}${u.html}</div>`}
 function renderHabs(){
@@ -116,7 +118,7 @@ function renderHabs(){
  if(her.length)h+=`<div class="grp">Herança · ${esc(F.heranca)} · entrada de 2 espaços, habilidades incluídas</div>`+her.map(x=>card(Object.assign({},x,{esp:0}))).join('');
  h+=`<div class="grp">${F.kit2==='Kit Próprio'?'Kit Próprio e avulsas':'Habilidades avulsas'}</div>`;
  h+=F.habs.map(n=>HAB[n]?card(HAB[n],true):'').join('')||`<p class="hint">Nenhuma habilidade avulsa ainda. Busque abaixo pelo nome.</p>`;
- $('habs').innerHTML=h;
+ $('habs').innerHTML=h;renderCHabs();renderCTr();
  const pool=D.hab.filter(x=>x.tipo==='avulsa');
  $('habDL').innerHTML=pool.filter(x=>!F.habs.includes(x.nome)).map(x=>`<option value="${esc(x.nome)}">${esc(x.grupo.replace('Avulsa · ',''))} · ${x.esp} esp.</option>`).join('');
 }
@@ -127,10 +129,26 @@ function renderEcos(){
  $('ecoNota').textContent=F.ancora?`Afinidade: ${F.ancora}`:'Sem Âncora de afinidade';
  const MP={'ataque':'DA','reação':'DD','estratégia':'DE'};
  $('ecos').innerHTML=F.ecos.map(n=>{const e=ECO[n];if(!e)return'';const af=F.ancora===e.ancora;
-  const body=e.fracasso?`<p>${esc(e.texto)}</p>`:e.formas.map(f=>{const v=Math.max(0,f.valor-(af?1:0));const unit=f.forma==='Implantada'?'dados narrativos':MP[f.momento||e.momento];const us=f.forma==='Implantada'?{cls:'',attr:''}:ecoUse(e,f,v,MP[f.momento||e.momento]);return`<div class="forma${us.cls}"${us.attr}><b>${f.forma.toUpperCase()}</b> ${pillCost((f.forma==='Padrão'||f.forma==='Caótica'?'1 DM + ':'')+v+' '+unit)}${af&&f.valor>0?' <span class="pill o">−1 afinidade</span>':''} ${esc(f.texto)}</div>`}).join('');
+  const body=e.fracasso?`<p>${esc(e.texto)}</p>`:e.formas.map(f=>{const v=Math.max(0,f.valor-(af?1:0));const unit=f.forma==='Implantada'?'dados narrativos':MP[f.momento||e.momento];return`<div class="forma"><b>${f.forma.toUpperCase()}</b> ${pillCost(v?v+' '+unit:'sem custo')}${af&&f.valor>0?' <span class="pill o">−1 afinidade</span>':''} ${esc(f.texto)}</div>`}).join('');
   return`<div class="ab"><div class="h"><span class="nm">${e.momento?shape({ataque:'Golpe','reação':'Roll','estratégia':'Pensamento'}[e.momento]):''}${esc(e.nome)} <span class="anc">${esc(e.ancora.toUpperCase())}</span></span>${e.momento?`<span class="pill o">${esc(e.momento)}</span>`:''}<span class="pill o">${e.esp} ${e.esp===1?'espaço':'espaços'}</span><button class="x" data-ecox="${esc(n)}" aria-label="Remover">×</button></div>${body}</div>`}).join('')||`<p class="hint">Nenhum eco. Escolha abaixo.</p>`;
+ renderCHabs();
  opts($('ecoIn'),D.ecos.filter(e=>!F.ecos.includes(e.nome)).map(e=>[e.nome,`${e.nome} · ${e.ancora}${e.fracasso?'':' · '+e.esp+' esp.'}`]),'');
 }
+function ownedHabs(){const[k,s]=kitHabs();const her=D.hab.filter(x=>x.tipo==='heranca'&&F.heranca&&x.grupo==='Herança · '+F.heranca);return[...k,...s,...her,...F.habs.map(n=>HAB[n]).filter(Boolean)]}
+function renderCHabs(){const el=$('chabs');if(!el)return;const c=F.comb,sel=selOf();
+ if(!c.on){el.innerHTML='<p class="cvazio">Inicie o combate.</p>';return}
+ const keep=cls=>/ (can|sel|used)/.test(cls);
+ const hs=ownedHabs().map(h=>{const u=useState(h);return keep(u.cls)?card(h,false,true):''}).join('');
+ const MP={'ataque':'DA','reação':'DD','estratégia':'DE'};let es='';
+ for(const n of F.ecos){const e=ECO[n];if(!e||e.fracasso)continue;const af=F.ancora===e.ancora;
+  for(const f of e.formas){if(f.forma==='Implantada')continue;const v=Math.max(0,f.valor-(af?1:0)),us=ecoUse(e,f,v,MP[f.momento||e.momento]);if(!keep(us.cls))continue;
+   es+=`<div class="ab${us.cls}"${us.attr}><div class="h"><span class="nm">${shape({ataque:'Golpe','reação':'Roll','estratégia':'Pensamento'}[f.momento||e.momento])}${esc(e.nome)} · ${esc(f.forma)}</span>${pillCost(v?v+' '+MP[f.momento||e.momento]:'sem custo')}</div><p>${esc(f.texto)}</p>${us.cls.includes('used')?'<p class="why">USADA · DADOS JÁ GASTOS</p>':us.cls.includes('sel')?'<p class="why">SELECIONADA</p>':''}</div>`}}
+ if(hs||es){el.innerHTML=(hs?'<div class="cgrpc">Habilidades</div>'+hs:'')+(es?'<div class="cgrpc">Ecos</div>'+es:'');return}
+ el.innerHTML=`<p class="cvazio">${selVazia(sel)&&!c.uso?'Escolha a ação do turno.':'Nenhuma habilidade para esta ação.'}</p>`}
+function renderCTr(){const el=$('ctr');if(!el)return;const rows=[];
+ for(const[k,n]of NARR.map(x=>[x[0],x[1]]))for(const[s,l,d1,d2]of TRT){const t=F.tracos[k][s]||{};if(!t.t||t.cor)continue;rows.push(`<div class="ctr${t.u?' u':''}"><span class="k">${n.toUpperCase()}</span><span class="d">${epico()?d2:d1}</span><span class="tx">${esc(t.t)}</span><label><input type="checkbox" ${t.u?'checked':''} data-tr="${k}.${s}" data-f="u">usado</label></div>`)}
+ el.innerHTML=rows.join('')||'<p class="cvazio">Nenhum Traço preenchido.</p>'}
+function setView(v){document.body.classList.toggle('v-comb',v==='comb');document.body.classList.toggle('v-ficha',v!=='comb');for(const b of document.querySelectorAll('[data-view]'))b.classList.toggle('on',b.dataset.view===v);if((location.hash==='#combate')!==(v==='comb'))history.replaceState(null,'',v==='comb'?'#combate':location.pathname+location.search);scrollTo(0,0)}
 function renderArma(){
  const a=ARMA[F.arma];
  if(!a){$('armaInfo').innerHTML='';return}
@@ -289,13 +307,14 @@ document.addEventListener('input',e=>{
  if(el.dataset.k){F[el.dataset.k]=el.dataset.num!==undefined?(el.value===''?'':+el.value):el.value;save();
   if(['nome','conto','aspecto','kit2','origem'].includes(el.dataset.k))renderTop();
   if(['conto','aspecto','kit2','heranca','ancora'].includes(el.dataset.k)){renderVida();renderNarr();renderComb();renderHabs();renderEcos()}
+  for(const o of document.querySelectorAll(`[data-k="${el.dataset.k}"]`))if(o!==el&&o.tagName!=='SELECT')o.value=el.value;
   if(['vAjuste','vDireto'].includes(el.dataset.k))renderVida();
   if(['arma','brut'].includes(el.dataset.k))renderArma();
   return}
  if(el.dataset.fer!==undefined){F.fer[+el.dataset.fer][el.dataset.f]=el.dataset.f==='g'?+el.value:el.value;save();const mx=vidaMax(),sf=F.fer.reduce((a,f)=>a+(+f.g||0),0);$('vDisp').textContent=mx-(+F.vDireto||0)-sf;return}
  if(el.dataset.cap){F.cap[el.dataset.cap]=Math.max(0,Math.min(12,+el.value||0));save();renderNarr();const i=document.querySelector(`[data-cap="${el.dataset.cap}"]`);i.focus();i.setSelectionRange?.(9,9);return}
  if(el.dataset.tr){if(el.tagName==='TEXTAREA')grow(el);const[k,s]=el.dataset.tr.split('.');F.tracos[k][s]=F.tracos[k][s]||{};F.tracos[k][s][el.dataset.f]=el.type==='checkbox'?el.checked:el.value;save();
-  if(el.dataset.f==='cor'){renderNarr();renderEcos()}return}
+  if(el.dataset.f==='cor'){renderNarr();renderEcos()}if(el.dataset.f==='u')renderNarr();renderCTr();return}
  if(el.dataset.condx){F.conds[el.dataset.condx].x=el.value;save();return}
 });
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('[data-use]')){e.preventDefault();toggleSel(e.target.dataset.use)}});
@@ -344,6 +363,8 @@ $('bRod').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.'
  const lk=['DA','DD','DE','DM'].map(k=>[k,lockedBy(k)]).filter(x=>x[1]);if(lk.length)out.push('bloqueado até encerrar o turno: '+lk.map(x=>x[0]+' ('+x[1]+')').join(', '));
  save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log(`Rodada ${c.rodada}: ${out.join(', ')}.`)};
 {const setA=v=>{document.body.classList.toggle('ajuda',v);$('bAjuda').setAttribute('aria-pressed',v)};let a0=false;try{a0=localStorage.getItem('brasas-ajuda')==='1'}catch(e){}setA(a0);$('bAjuda').onclick=()=>{const v=!document.body.classList.contains('ajuda');setA(v);try{localStorage.setItem('brasas-ajuda',v?'1':'0')}catch(e){}}}
+setView(location.hash==='#combate'?'comb':'ficha');addEventListener('hashchange',()=>setView(location.hash==='#combate'?'comb':'ficha'));
+for(const b of document.querySelectorAll('[data-view]'))b.onclick=()=>setView(b.dataset.view);
 $('bFim').onclick=()=>{Object.assign(F.comb,{cargas:0,on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',base:null}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
 $('habAdd').onclick=addHab;$('habIn').addEventListener('keydown',e=>{if(e.key==='Enter')addHab()});
 function addHab(){const n=$('habIn').value.trim();const h=HAB[n];
