@@ -29,7 +29,7 @@ let st={fichas:[],atual:null};
 try{const r=localStorage.getItem(KEY);if(r)st=JSON.parse(r)}catch(e){}
 if(!st.fichas||!st.fichas.length){const e=exemplo();st={fichas:[e],atual:e.id}}
 let F=st.fichas.find(f=>f.id===st.atual)||st.fichas[0];
-function fix(f){const b=blank();for(const k in b)if(f[k]===undefined)f[k]=b[k];for(const k of['chama','fumaca','lume'])f.tracos[k]=f.tracos[k]||{};f.comb.vaz=f.comb.vaz||{};const u=f.comb.uso;if(u&&!Array.isArray(u.ids))f.comb.uso=null;const sl=f.comb.sel;if(!sl||!Array.isArray(sl.ids))f.comb.sel={ids:[],colh:'',vant:0,brut:0};return f}
+function fix(f){const b=blank();for(const k in b)if(f[k]===undefined)f[k]=b[k];for(const k of['chama','fumaca','lume'])f.tracos[k]=f.tracos[k]||{};f.comb.vaz=f.comb.vaz||{};const u=f.comb.uso;if(u&&!Array.isArray(u.ids))f.comb.uso=null;const sl=f.comb.sel;if(!sl||!Array.isArray(sl.ids)||!('base' in sl))f.comb.sel={ids:[],colh:'',base:null};return f}
 st.fichas.forEach(fix);
 function save(){st.atual=F.id;try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
 
@@ -162,11 +162,25 @@ const MOMN={ataque:'Ataque','reação':'Reação','estratégia':'Estratégia',es
 function momOf(id){if(id.startsWith('eco:')){const[,n,fo]=id.split(':');const e=ECO[n],f=e.formas.find(x=>x.forma===fo);return f.momento||e.momento}
  return{Golpe:'ataque',Roll:'reação',Pensamento:'estratégia'}[HAB[id].cat]||'especial'}
 function defOf(id){if(id.startsWith('eco:'))return'';const u=(HAB[id].usado||'').toLowerCase();if(/qualquer/.test(u))return'';const m=u.match(/esquiva|bloqueio|contra-ataque|nenhuma/);return m?m[0]:''}
-function selOf(){const c=F.comb;c.sel=c.sel||{ids:[],colh:''};c.sel.vant=c.sel.vant||0;c.sel.brut=c.sel.brut||0;return c.sel}
-function selMom(sel){sel=sel||selOf();return sel.ids.length?momOf(sel.ids[0]):(sel.vant||sel.brut)?'ataque':null}
-function selVazia(sel){sel=sel||selOf();return!sel.ids.length&&!sel.vant&&!sel.brut}
-function selLbl(sel){const a=[];if(sel.vant)a.push(`+${sel.vant} Vantagem`);if(sel.brut)a.push(`+${sel.brut} Brutalidade`);return a.concat(sel.ids.map(i=>costFor(i).lbl)).join(', ')}
-function planIds(ids,colh,extraDA){const c=F.comb,tot={},gain={};let all=null;if(extraDA)tot.DA=extraDA;
+function selOf(){const c=F.comb;c.sel=c.sel||{ids:[],colh:'',base:null};if(!('base' in c.sel))c.sel.base=null;return c.sel}
+const BASE={ataque:{multi:0,L:{Atacar:{k:'DA',fix:1,v:1,b:1},Agarrar:{k:'DA',fix:1,v:1},Derrubar:{k:'DA',fix:1,v:1},Empurrar:{k:'DA',fix:1,v:1},Quebrar:{k:'DA',fix:1,b:1,auto:1}}},
+ 'reação':{multi:0,L:{Esquiva:{k:'DD',d:'d8'},Bloqueio:{k:'DD',d:'d8'},'Contra-ataque':{k:'DA',d:'d10',plus:{DD:1}},Nenhuma:{none:1}}},
+ 'estratégia':{multi:1,L:{Deslocar:{k:'DD',d:'d8',soma:1},Atravessar:{k:'DD',d:'d8'},Escalar:{k:'DD',d:'d8'},Distrair:{k:'DE',d:'d4',soma:1},'Análise':{k:'DE',d:'d4'},'Trocar posição':{k:'DE',fix:1,enc:1},Postergar:{k:'DE',fix:1,enc:1,d:'d4'},Fugir:{k:'DD',d:'d8',min:2,enc:1}}}};
+function baseCost(b){const t={};if(!b)return t;const L=BASE[b.mom].L;for(const n in b.a){const o=L[n],x=b.a[n];if(o.none)continue;
+ if(b.mom==='ataque'){t.DA=(t.DA||0)+1+2*(x.v||0)+2*(x.b||0);continue}
+ t[o.k]=(t[o.k]||0)+(o.fix?1:x.n);if(o.plus)for(const k in o.plus)t[k]=(t[k]||0)+o.plus[k]}return t}
+function baseRoll(mom,n,x){const o=BASE[mom].L[n];if(o.none)return'acerto automático';if(mom==='ataque')return o.auto?'sempre atinge':`${1+(x.v||0)}d10`;
+ if(!o.d)return'';const q=o.fix?1:x.n;return`${q}${o.d}${q>1?(o.soma?' somados':''):''}`}
+function baseLbl(b){if(!b)return[];return Object.entries(b.a).map(([n,x])=>{let t=n;if(b.mom==='ataque'){if(x.v)t+=` +${x.v} Vant.`;if(x.b)t+=` +${x.b} Brut.`}else if(!BASE[b.mom].L[n].fix&&!BASE[b.mom].L[n].none)t+=` ${x.n} ${BASE[b.mom].L[n].k}`;const r=baseRoll(b.mom,n,x);return r?`${t} (${r})`:t})}
+function baseBlock(mom,n){if(F.conds.Desmaiado)return'Desmaiado';if(mom==='reação'){if(F.conds.Ofuscado&&/Bloqueio|Contra/.test(n))return'Ofuscado';if(F.conds.Agarrado&&n==='Esquiva')return'Agarrado'}return''}
+function baseOk(nb){const c=F.comb,sel=selOf();if(!c.on||c.uso)return false;if(nb&&sel.ids.length&&selMom(sel)!==nb.mom)return false;if(nb&&sel.ids.some(x=>x.startsWith('eco:')))return false;
+ if(nb&&nb.mom==='reação'){const n=Object.keys(nb.a)[0].toLowerCase();if(sel.ids.some(x=>{const o=defOf(x);return o&&o!==n}))return false}
+ if(nb)for(const n in nb.a)if(baseBlock(nb.mom,n))return false;
+ return!planIds(sel.ids,sel.colh,baseCost(nb)).why}
+function selMom(sel){sel=sel||selOf();return sel.ids.length?momOf(sel.ids[0]):sel.base?sel.base.mom:null}
+function selVazia(sel){sel=sel||selOf();return!sel.ids.length&&!sel.base}
+function selLbl(sel){const a=baseLbl(sel.base);return a.concat(sel.ids.map(i=>costFor(i).lbl)).join(', ')}
+function planIds(ids,colh,extraDA){const c=F.comb,tot={},gain={};let all=null;if(extraDA)for(const k in extraDA)tot[k]=extraDA[k];
  for(const id of ids){if(id==='Colheita')continue;const co=costOf(costFor(id).cs);for(const k in co.dice)tot[k]=(tot[k]||0)+co.dice[k];if(co.all!=null)all=Math.max(all||0,co.all);const G=GAIN[id];if(G)for(const k in G)gain[k]=(gain[k]||0)+G[k]}
  const sp={};let dm=0;
  for(const k in tot){const l=lockedBy(k);if(l)return{why:`${k} bloqueado por ${l}`};if(k==='DM'){dm+=tot[k];continue}const p=Math.min(c[k],tot[k]);if(p)sp[k]=p;dm+=tot[k]-p}
@@ -181,9 +195,9 @@ function stateOf(id,usado,epLock){const c=F.comb,sel=selOf();
  if(!c.on||c.uso)return{};if(epLock)return{why:'liberada no Conto Épico'};const b=block(usado);if(b)return{why:b};
  const m=momOf(id);if(!selVazia(sel)&&selMom(sel)!==m)return{off:true};
  if(!selVazia(sel)&&(id.startsWith('eco:')||sel.ids.some(x=>x.startsWith('eco:'))))return{off:true};
- if(m==='reação'&&sel.ids.length){const df=defOf(id);if(df&&sel.ids.some(x=>{const o=defOf(x);return o&&o!==df}))return{off:true}}
+ if(m==='reação'){const df=defOf(id);if(df&&(sel.ids.some(x=>{const o=defOf(x);return o&&o!==df})||(sel.base&&!(df in Object.fromEntries(Object.keys(sel.base.a).map(n=>[n.toLowerCase(),1]))))))return{off:true}}
  if(id==='Colheita'){const ks=['DA','DD','DE'].filter(k=>c[k]>=10&&!lockedBy(k));return ks.length?{ok:true,ks}:{why:'nenhum estojo com 10 ou mais'}}
- const p=planIds([...sel.ids,id],sel.colh,2*(sel.vant+sel.brut));return p.why?{why:!selVazia(sel)?p.why+' para somar à seleção':p.why}:{ok:true}}
+ const p=planIds([...sel.ids,id],sel.colh,baseCost(sel.base));return p.why?{why:!selVazia(sel)?p.why+' para somar à seleção':p.why}:{ok:true}}
 function useState(h){const interactive=!(h.cat==='Passiva'&&(!h.custo||h.custo==='sem custo'));
  if(!interactive)return{cls:'',attr:'',html:''};
  const a=stateOf(h.nome,h.usado,h.epica&&!epico()),id=esc(h.nome),at=` data-use="${id}" role="button" tabindex="0"`;
@@ -208,21 +222,42 @@ function toggleSel(id){const c=F.comb,sel=selOf();
  sel.ids.push(id);if(id==='Colheita'&&a.ks.length===1)sel.colh=a.ks[0];rerUse()}
 function renderAcao(){const c=F.comb,sel=selOf(),el=$('acao');
  if(c.on&&c.uso){el.innerHTML=`<div class="tt">Usadas: ${esc(c.uso.lbl||c.uso.ids.map(i=>costFor(i).lbl).join(', '))}<small>${esc(fmtD(c.uso.d)||'sem custo')} · restam ${c.DA} DA, ${c.DD} DD, ${c.DE} DE, ${c.DM} DM</small></div><button class="btn" id="aDesf">Desfazer</button><button class="btn pri" id="aOk">Ok</button>`;el.hidden=false;return}
- if(c.on&&!selVazia(sel)){const p=planIds(sel.ids,sel.colh,2*(sel.vant+sel.brut)),n=sel.ids.length+(sel.vant?1:0)+(sel.brut?1:0);
+ if(c.on&&!selVazia(sel)){const p=planIds(sel.ids,sel.colh,baseCost(sel.base)),n=sel.ids.length+(sel.base?Object.keys(sel.base.a).length:0);
   el.innerHTML=`<div class="tt">${esc(MOMN[selMom(sel)])} · ${n} selecionada${n>1?'s':''}<small>${esc(selLbl(sel))} · ${esc(p.why?p.why:(fmtD(p.d)||'sem custo'))}</small></div><button class="btn pri" id="aUsar"${p.why?' disabled':''}>Usar</button><button class="btn" id="aLimpar">Limpar</button>`;el.hidden=false;return}
  el.hidden=true}
 function renderAtk(){const c=F.comb,sel=selOf(),el=$('atk');if(!el)return;
- const can=t=>{if(!c.on||c.uso)return false;if(!selVazia(sel)&&selMom(sel)!=='ataque')return false;if(sel.ids.some(x=>x.startsWith('eco:')))return false;return!planIds(sel.ids,sel.colh,2*(sel.vant+sel.brut+1)).why};
- const u=c.uso&&(c.uso.vant||c.uso.brut);
- el.className='ab atk'+(u?' used':(sel.vant||sel.brut)?' sel':'');
- const v=u?c.uso.vant:sel.vant,b=u?c.uso.brut:sel.brut,ok=can();
- el.innerHTML=`<span class="nm">${shape('Golpe')}No ataque</span>
- <span class="cnt">Vantagem <button class="btn" data-ab="vant-"${!sel.vant||u?' disabled':''} aria-label="Menos Vantagem">−</button><b>${v}</b><button class="btn" data-ab="vant+"${ok?'':' disabled'} aria-label="Mais Vantagem">+</button></span>
- <span class="cnt">Brutalidade <button class="btn" data-ab="brut-"${!sel.brut||u?' disabled':''} aria-label="Menos Brutalidade">−</button><b>${b}</b><button class="btn" data-ab="brut+"${ok?'':' disabled'} aria-label="Mais Brutalidade">+</button></span>
- <span class="pill a">2 DA por ponto</span>`}
-function usarSel(){const c=F.comb,sel=selOf(),p=planIds(sel.ids,sel.colh,2*(sel.vant+sel.brut));if(p.why){log(p.why);return}
- const vaz={...c.vaz};mudar(p.d);const n=selLbl(sel);c.uso={ids:[...sel.ids],d:p.d,vaz,ex:{},vant:sel.vant,brut:sel.brut,lbl:n};if(sel.brut){F.brut=String(Math.min(5,sel.brut));try{$('brut').value=F.brut;renderArma()}catch(e){}}c.sel={ids:[],colh:'',vant:0,brut:0};rerUse();log(`${n}: ${fmtD(p.d)||'sem custo'}.`)}
-function desfazer(){const c=F.comb,u=c.uso;if(!u)return;mudar(Object.fromEntries(Object.entries(u.d).map(([k,v])=>[k,-v])));c.vaz=u.vaz;c.uso=null;c.sel={ids:[],colh:'',vant:0,brut:0};rerUse();log('Uso desfeito, os dados voltaram.')}
+ const u=c.uso,ub=u&&u.base,b=ub||sel.base,tab=ub?ub.mom:(selMom(sel)||c.tab||'ataque'),G=BASE[tab],cur=b&&b.mom===tab?b.a:{};
+ el.className='ab atk'+(ub?' used':sel.base?' sel':'');
+ const dis=x=>x?' disabled':'';
+ const with_=(f)=>{const nb=JSON.parse(JSON.stringify(sel.base&&sel.base.mom===tab?sel.base:{mom:tab,a:{}}));f(nb);return nb};
+ let chips='';
+ for(const n in G.L){const o=G.L[n],x=cur[n],on=!!x;
+  let can=false;if(!u){if(on)can=true;else{const nb=with_(nb=>{if(!G.multi)nb.a={};if(G.multi&&o.enc)for(const k in nb.a)if(G.L[k].enc)delete nb.a[k];nb.a[n]={n:o.min||1,v:0,b:0}});can=baseOk(nb)}}
+  let ctl='';
+  if(on&&!o.none){
+   const step=(key,dl,label,minv)=>{const okUp=!u&&baseOk(with_(nb=>{nb.a[n][key]+=dl}));return`<span class="cnt">${label}<button class="btn" data-bx="${key}-:${esc(n)}"${dis(u||x[key]<=minv)} aria-label="Menos">−</button><b>${x[key]}</b><button class="btn" data-bx="${key}+:${esc(n)}"${dis(!okUp)} aria-label="Mais">+</button></span>`};
+   if(tab==='ataque'){if(o.v)ctl+=step('v',1,'Vant.',0);if(o.b)ctl+=step('b',1,'Brut.',0)}
+   else if(!o.fix)ctl+=step('n',1,o.k,o.min||1);
+   const r=baseRoll(tab,n,x);if(r)ctl+=`<small>${esc(r)}</small>`}
+  chips+=`<span class="bc${on?' on':''}"><button class="btn a" data-bx="a:${esc(n)}"${dis(!can)}>${esc(n)}</button>${ctl}</span>`}
+ const cost=fmtD(Object.fromEntries(Object.entries(baseCost(b&&b.mom===tab?b:null)).map(([k,v])=>[k,-v])));
+ el.innerHTML=`<div class="hd"><span class="nm">${shape({ataque:'Golpe','reação':'Roll','estratégia':'Pensamento'}[tab])}Ação do turno</span>
+ <span class="tabs">${['ataque','reação','estratégia'].map(t=>`<button class="btn${t===tab?' on':''}" data-bx="t:${t}"${dis(u||(!selVazia(sel)&&selMom(sel)!==t))}>${MOMN[t]}</button>`).join('')}</span></div>
+ <div class="chips">${chips}</div>${cost?`<span class="tot">${ub?'Gasto':'Custo'}: ${esc(cost)}</span>`:''}`}
+function baseClick(v){const c=F.comb,sel=selOf();if(c.uso){log('Confirme (Ok) ou desfaça o uso anterior antes.');return}
+ const[op,n]=[v.slice(0,v.indexOf(':')),v.slice(v.indexOf(':')+1)];
+ if(op==='t'){c.tab=n;rerUse();return}
+ if(!c.on){log('Inicie o combate primeiro.');return}
+ const tab=selMom(sel)||c.tab||'ataque',G=BASE[tab],o=G.L[n];
+ let nb=JSON.parse(JSON.stringify(sel.base&&sel.base.mom===tab?sel.base:{mom:tab,a:{}}));
+ if(op==='a'){if(nb.a[n])delete nb.a[n];else{if(!G.multi)nb.a={};if(G.multi&&o.enc)for(const k in nb.a)if(G.L[k].enc)delete nb.a[k];nb.a[n]={n:o.min||1,v:0,b:0}}}
+ else{const k=op[0],dl=op[1]==='+'?1:-1;if(!nb.a[n])return;nb.a[n][k]=Math.max(k==='n'?(o.min||1):0,nb.a[n][k]+dl)}
+ if(!Object.keys(nb.a).length)nb=null;
+ if(nb&&(op==='a'?nb.a[n]:1)&&!baseOk(nb)&&!(op.endsWith('-'))){log('Dados insuficientes ou ação incompatível com a seleção.');return}
+ sel.base=nb;rerUse()}
+function usarSel(){const c=F.comb,sel=selOf(),p=planIds(sel.ids,sel.colh,baseCost(sel.base));if(p.why){log(p.why);return}
+ const vaz={...c.vaz};mudar(p.d);const n=selLbl(sel);const bb=sel.base&&sel.base.mom==='ataque'?Object.values(sel.base.a)[0].b:0;c.tab=selMom(sel)||c.tab;c.uso={ids:[...sel.ids],d:p.d,vaz,ex:{},base:sel.base,lbl:n};if(bb){F.brut=String(Math.min(5,bb));try{$('brut').value=F.brut;renderArma()}catch(e){}}c.sel={ids:[],colh:'',base:null};rerUse();log(`${n}: ${fmtD(p.d)||'sem custo'}.`)}
+function desfazer(){const c=F.comb,u=c.uso;if(!u)return;mudar(Object.fromEntries(Object.entries(u.d).map(([k,v])=>[k,-v])));c.vaz=u.vaz;c.uso=null;c.sel={ids:[],colh:'',base:null};rerUse();log('Uso desfeito, os dados voltaram.')}
 function extra(t){const u=F.comb.uso;if(!u)return;let d={};
  if(t==='volta'){d={DD:1};u.ex.volta=true}
  if(t==='sadismo'){d={DM:1};u.ex.sadismo=true}
@@ -250,8 +285,8 @@ document.addEventListener('click',e=>{
  if(d.extra){extra(d.extra);return}
  if(d.colh){selOf().colh=d.colh;rerUse();return}
  if(b.id==='aUsar'){usarSel();return}
- if(d.ab){const sel=selOf(),k=d.ab.slice(0,4),up=d.ab.endsWith('+');if(F.comb.uso){log('Confirme (Ok) ou desfaça o uso anterior antes.');return}sel[k]=Math.max(0,sel[k]+(up?1:-1));rerUse();return}
- if(b.id==='aLimpar'){F.comb.sel={ids:[],colh:'',vant:0,brut:0};rerUse();return}
+ if(d.bx){baseClick(d.bx);return}
+ if(b.id==='aLimpar'){F.comb.sel={ids:[],colh:'',base:null};rerUse();return}
  if(b.id==='aDesf'){desfazer();return}
  if(b.id==='aOk'){F.comb.uso=null;rerUse();return}
  for(const k of['chama','fumaca','lume'])if(d['narr'+k[0].toUpperCase()+k.slice(1)]){const n=+d['narr'+k[0].toUpperCase()+k.slice(1)];F.cur[k]=F.cur[k]===n?n-1:n;save();renderNarr();return}
@@ -269,7 +304,7 @@ function setC(k,v){const mx=k==='DM'?dmMax():20;const old=F.comb[k];if(v<old&&lo
 $('addFer').onclick=()=>{F.fer.push({g:0,d:''});save();renderVida();const ins=document.querySelectorAll('[data-fer][data-f="g"]');ins[ins.length-1]?.focus()};
 $('bCena').onclick=()=>{F.cur={...F.cap};save();renderNarr()};
 $('bTracos').onclick=()=>{for(const k in F.tracos)for(const s in F.tracos[k])if(F.tracos[k][s])F.tracos[k][s].u=false;save();renderNarr()};
-$('bIni').onclick=()=>{const c=F.comb;c.on=true;c.rodada=1;c.DA=Math.floor(F.cap.chama/2);c.DD=Math.floor(F.cap.fumaca/2);c.DE=Math.floor(F.cap.lume/2);c.DM=0;c.vaz={};c.uso=null;c.sel={ids:[],colh:'',vant:0,brut:0};
+$('bIni').onclick=()=>{const c=F.comb;c.on=true;c.rodada=1;c.DA=Math.floor(F.cap.chama/2);c.DD=Math.floor(F.cap.fumaca/2);c.DE=Math.floor(F.cap.lume/2);c.DM=0;c.vaz={};c.uso=null;c.sel={ids:[],colh:'',base:null};
  for(const k in F.tracos)for(const s in F.tracos[k])if(F.tracos[k][s])F.tracos[k][s].u=false;
  save();renderComb();renderNarr();renderHabs();renderEcos();renderAcao();renderAtk();log(`Rodada 1: metade das capacidades, ${c.DA} DA, ${c.DD} DD, ${c.DE} DE e nenhum DM. Traços liberados.`)};
 $('bRod').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.');return}
@@ -283,10 +318,10 @@ $('bRod').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.'
   let v=c[k]+g;
   if(a==='Brutalista'&&v>=20){out.push(`${k} transbordou e zerou`);v=0}else v=Math.min(20,v);
   out.push(`+${g} ${k}`);c[k]=v}
- const dg=Math.min(dmMax(),c.DM+1)-c.DM;c.DM+=dg;out.push(`+${dg} DM`);c.vaz={};c.uso=null;c.sel={ids:[],colh:'',vant:0,brut:0};
+ const dg=Math.min(dmMax(),c.DM+1)-c.DM;c.DM+=dg;out.push(`+${dg} DM`);c.vaz={};c.uso=null;c.sel={ids:[],colh:'',base:null};
  const lk=['DA','DD','DE','DM'].map(k=>[k,lockedBy(k)]).filter(x=>x[1]);if(lk.length)out.push('bloqueado até encerrar o turno: '+lk.map(x=>x[0]+' ('+x[1]+')').join(', '));
  save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log(`Rodada ${c.rodada}: ${out.join(', ')}.`)};
-$('bFim').onclick=()=>{Object.assign(F.comb,{on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',vant:0,brut:0}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
+$('bFim').onclick=()=>{Object.assign(F.comb,{on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',base:null}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
 $('habAdd').onclick=addHab;$('habIn').addEventListener('keydown',e=>{if(e.key==='Enter')addHab()});
 function addHab(){const n=$('habIn').value.trim();const h=HAB[n];
  if(!h){$('habMsg').textContent='Não encontrei essa habilidade. Escolha um nome da lista.';return}

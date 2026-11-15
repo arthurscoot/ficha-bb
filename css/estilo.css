@@ -118,10 +118,20 @@ table.list th{font-family:var(--f-ui);font-size:10.5px;letter-spacing:.1em;color
 .acao .btn:disabled{opacity:.45;cursor:not-allowed}
 .forma.can{outline:1.5px solid var(--ok);outline-offset:1px;cursor:pointer;padding:2px 4px}
 .forma.used{outline:2px solid var(--rubro2);background:color-mix(in srgb,var(--rubro2) 10%,var(--paper));padding:2px 4px}
-.atk{display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
-.atk .cnt{display:flex;align-items:center;gap:6px;font-weight:600}
-.atk .cnt b{font-family:var(--f-disp);font-size:20px;min-width:1.2em;text-align:center;font-variant-numeric:tabular-nums}
-.atk .cnt .btn{padding:2px 9px;font-size:15px}
+.atk{display:flex;flex-direction:column;gap:8px}
+.atk .hd{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;justify-content:space-between}
+.atk .tabs{display:flex;gap:4px}
+.atk .tabs .btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.atk .chips{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.atk .bc{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:3px;padding:3px 6px;background:var(--card)}
+.atk .bc.on{border-color:var(--de);box-shadow:inset 0 0 0 1px var(--de);background:color-mix(in srgb,var(--de) 10%,var(--paper))}
+.atk .bc>.btn.a{border:0;background:transparent;padding:3px 4px;font-size:13px}
+.atk .bc>.btn.a:disabled{opacity:.4;cursor:not-allowed}
+.atk .bc small{font-family:var(--f-ui);font-size:10.5px;font-weight:600;color:var(--muted)}
+.atk .tot{font-family:var(--f-ui);font-size:11.5px;font-weight:600;color:var(--muted)}
+.atk .cnt{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:13px}
+.atk .cnt b{font-family:var(--f-disp);font-size:16px;min-width:1.2em;text-align:center;font-variant-numeric:tabular-nums}
+.atk .cnt .btn{padding:0 7px;font-size:14px}
 .atk .cnt .btn:disabled{opacity:.4;cursor:not-allowed}
 .forma.cant{opacity:.6;padding:2px 4px}
 .mini{font-family:var(--f-ui);font-size:11px;font-weight:600;border:1px solid var(--ok);color:var(--ok);background:var(--card);padding:3px 8px;border-radius:2px;cursor:pointer;margin:6px 6px 0 0}
