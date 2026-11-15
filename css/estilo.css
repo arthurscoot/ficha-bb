@@ -130,6 +130,9 @@ table.list th{font-family:var(--f-ui);font-size:10.5px;letter-spacing:.1em;color
 .atk .bc>.btn.a{border:0;background:transparent;padding:3px 4px;font-size:13px}
 .atk .bc>.btn.a:disabled{opacity:.4;cursor:not-allowed}
 .atk .bc small{font-family:var(--f-ui);font-size:10.5px;font-weight:600;color:var(--muted)}
+.atk .bt{font-family:var(--f-ui);font-size:12.5px;font-weight:600;color:var(--ink);border-left:3px solid var(--da);padding:3px 8px;background:var(--card)}.atk .bt small{color:var(--muted);font-weight:500}
+.cargas{display:flex;align-items:center;gap:5px;margin-top:6px}.cargas .cg{width:14px;height:14px;border:1.5px solid var(--da);border-radius:2px}.cargas .cg.on{background:var(--da)}.cargas .mini{margin-left:6px}
+.mini:disabled{opacity:.4;cursor:not-allowed}
 .atk .tot{font-family:var(--f-ui);font-size:11.5px;font-weight:600;color:var(--muted)}
 .atk .cnt{display:inline-flex;align-items:center;gap:4px;font-weight:600;font-size:13px}
 .atk .cnt b{font-family:var(--f-disp);font-size:16px;min-width:1.2em;text-align:center;font-variant-numeric:tabular-nums}

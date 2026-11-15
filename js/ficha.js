@@ -165,7 +165,7 @@ function defOf(id){if(id.startsWith('eco:'))return'';const u=(HAB[id].usado||'')
 function selOf(){const c=F.comb;c.sel=c.sel||{ids:[],colh:'',base:null};if(!('base' in c.sel))c.sel.base=null;return c.sel}
 const BASE={ataque:{multi:0,L:{Atacar:{k:'DA',fix:1,v:1,b:1},Agarrar:{k:'DA',fix:1,v:1},Derrubar:{k:'DA',fix:1,v:1},Empurrar:{k:'DA',fix:1,v:1},Quebrar:{k:'DA',fix:1,b:1,auto:1},Reverberar:{k:'DM',fix:1,rev:1}}},
  'reação':{multi:0,L:{Esquiva:{k:'DD',d:'d8'},Bloqueio:{k:'DD',d:'d8'},'Contra-ataque':{k:'DA',d:'d10',plus:{DD:1}},Nenhuma:{none:1},Reverberar:{k:'DM',fix:1,rev:1}}},
- 'estratégia':{multi:1,L:{Deslocar:{k:'DD',d:'d8',soma:1},Atravessar:{k:'DD',d:'d8'},Escalar:{k:'DD',d:'d8'},Distrair:{k:'DE',d:'d4',soma:1},'Análise':{k:'DE',d:'d4'},'Trocar posição':{k:'DE',fix:1,enc:1},Postergar:{k:'DE',fix:1,enc:1,d:'d4'},Fugir:{k:'DD',d:'d8',min:2,enc:1},Reverberar:{k:'DM',fix:1,rev:1,enc:1}}}};
+ 'estratégia':{multi:1,L:{Deslocar:{k:'DD',d:'d8',soma:1},Atravessar:{k:'DD',d:'d8'},Escalar:{k:'DD',d:'d8'},Distrair:{k:'DE',d:'d4',soma:1},'Análise':{k:'DE',d:'d4'},'Trocar posição':{k:'DE',fix:1,enc:1},Postergar:{k:'DE',fix:1,enc:1,d:'d4'},Fugir:{k:'DD',d:'d8',min:2,enc:1},Nenhuma:{none:1},Reverberar:{k:'DM',fix:1,rev:1,enc:1}}}};
 function baseCost(b,ids){const t={};if(!b)return t;ids=ids||selOf().ids;const L=BASE[b.mom].L;for(const n in b.a){const o=L[n],x=b.a[n];if(o.none)continue;
  if(o.rev){const ec=ids.filter(i=>i.startsWith('eco:'));if(!(ec.length&&ec.every(i=>i.endsWith(':Estendida'))))t.DM=(t.DM||0)+1;continue}
  if(b.mom==='ataque'){t.DA=(t.DA||0)+1+2*(x.v||0)+2*(x.b||0);continue}
@@ -174,8 +174,13 @@ function baseRoll(mom,n,x){const o=BASE[mom].L[n];if(o.rev)return'';if(o.none)re
  if(!o.d)return'';const q=o.fix?1:x.n;return`${q}${o.d}${q>1?(o.soma?' somados':''):''}`}
 function baseLbl(b){if(!b)return[];return Object.entries(b.a).map(([n,x])=>{let t=n;if(b.mom==='ataque'){if(x.v)t+=` +${x.v} Vant.`;if(x.b)t+=` +${x.b} Brut.`}else if(!BASE[b.mom].L[n].fix&&!BASE[b.mom].L[n].none)t+=` ${x.n} ${BASE[b.mom].L[n].k}`;const r=baseRoll(b.mom,n,x);return r?`${t} (${r})`:t})}
 function baseBlock(mom,n){if(F.conds.Desmaiado)return'Desmaiado';if(mom==='reação'){if(F.conds.Ofuscado&&/Bloqueio|Contra/.test(n))return'Ofuscado';if(F.conds.Agarrado&&n==='Esquiva')return'Agarrado'}return''}
+function golpeOk(id,nb){if(id.startsWith('eco:')||!HAB[id])return true;const h=HAB[id],u=(h.usado||'').replace(/^com /,'').toLowerCase(),keys=Object.keys(nb.a);
+ if(h.cat==='Golpe'&&nb.mom==='ataque'){if(id==='Corpo Elástico')return true;const need=/empurrar/.test(u)?'Empurrar':/agarrar/.test(u)?'Agarrar':/derrubar/.test(u)?'Derrubar':/quebrar/.test(u)?'Quebrar':'Atacar';return keys[0]===need}
+ if(h.cat==='Pensamento'&&nb.mom==='estratégia'){const need=u?keys.find(k=>k.toLowerCase()===u):keys.find(k=>k==='Nenhuma');return!!need}
+ if(h.cat==='Roll'&&nb.mom==='reação'&&!u)return keys[0]==='Nenhuma';
+ return true}
 function pruneIds(nb,ids){if(!nb)return[];const rv=!!nb.a.Reverberar,defs=Object.keys(nb.a).map(n=>n.toLowerCase());
- return ids.filter(i=>{const m=momOf(i);if(i.startsWith('eco:')!==rv)return false;if(!(m===nb.mom||(!rv&&m==='especial')))return false;
+ return ids.filter(i=>{const m=momOf(i);if(i.startsWith('eco:')!==rv)return false;if(!(m===nb.mom||(!rv&&m==='especial')))return false;if(!golpeOk(i,nb))return false;
   if(nb.mom==='reação'&&!rv){const o=defOf(i);if(o&&!defs.includes(o))return false}return true})}
 function baseOk(nb){const c=F.comb,sel=selOf();if(!c.on||c.uso)return false;const ids=pruneIds(nb,sel.ids);
  if(nb)for(const n in nb.a)if(baseBlock(nb.mom,n))return false;
@@ -198,12 +203,13 @@ function stateOf(id,usado,epLock){const c=F.comb,sel=selOf();
  if(!c.on||c.uso)return{};const sb=sel.base;if(!sb)return{};
  const m=momOf(id),isE=id.startsWith('eco:'),rv=!!sb.a.Reverberar;
  if(isE){if(!rv||sb.mom!==m)return{};if(sel.ids.length)return{off:true}}
- else{if(rv)return{};if(m!=='especial'&&sb.mom!==m)return{}}
- if(epLock)return{why:'liberada no Conto Épico'};const b=block(usado);if(b)return{why:b};
+ else{if(rv)return{};if(m!=='especial'&&sb.mom!==m)return{};if(!golpeOk(id,sb))return{}}
+ if(epLock)return{why:'liberada no Conto Épico'};const b=block(usado);if(b)return{why:b};if(id==='Atingida Intensiva'&&(c.cargas||0)<4)return{why:'precisa de 4 cargas'};
  if(m==='reação'){const df=defOf(id);if(df&&(sel.ids.some(x=>{const o=defOf(x);return o&&o!==df})||(sel.base&&!(df in Object.fromEntries(Object.keys(sel.base.a).map(n=>[n.toLowerCase(),1]))))))return{off:true}}
  if(id==='Colheita'){const ks=['DA','DD','DE'].filter(k=>c[k]>=10&&!lockedBy(k));return ks.length?{ok:true,ks}:{why:'nenhum estojo com 10 ou mais'}}
  const p=planIds([...sel.ids,id],sel.colh,baseCost(sel.base,[...sel.ids,id]));return p.why?{why:!selVazia(sel)?p.why+' para somar à seleção':p.why}:{ok:true}}
-function useState(h){const interactive=!(h.cat==='Passiva'&&(!h.custo||h.custo==='sem custo'));
+function useState(h){const r=useState0(h);if(h.nome==='Atingida Intensiva'){const c=F.comb,n=(c.cargas||0),pode=c.on&&!c.uso&&n<4&&c.cargaRod!==c.rodada&&c.DE>0&&!lockedBy('DE');r.html=(r.html||'')+`<div class="cargas">${[0,1,2,3].map(i=>`<span class="cg${i<n?' on':''}"></span>`).join('')}<button class="mini" data-carga="1"${pode?'':' disabled'}>Carregar · 1 DE</button></div>`}return r}
+function useState0(h){const interactive=!(h.cat==='Passiva'&&(!h.custo||h.custo==='sem custo'));
  if(!interactive)return{cls:'',attr:'',html:''};
  const a=stateOf(h.nome,h.usado,h.epica&&!epico()),id=esc(h.nome),at=` data-use="${id}" role="button" tabindex="0"`;
  if(a.used){const u=F.comb.uso;let x='';if(h.nome==='Amplificação Lâmina'&&!u.ex?.volta)x=`<button class="mini" data-extra="volta">Acertou: o DD volta</button>`;
@@ -248,7 +254,11 @@ function renderAtk(){const c=F.comb,sel=selOf(),el=$('atk');if(!el)return;
  const cost=fmtD(Object.fromEntries(Object.entries(baseCost(b&&b.mom===tab?b:null,ub?u.ids:sel.ids)).map(([k,v])=>[k,-v])));
  el.innerHTML=`<div class="hd"><span class="nm">${shape({ataque:'Golpe','reação':'Roll','estratégia':'Pensamento'}[tab])}Ação do turno</span>
  <span class="tabs">${['ataque','reação','estratégia'].map(t=>`<button class="btn${t===tab?' on':''}" data-bx="t:${t}"${dis(u||(!selVazia(sel)&&selMom(sel)!==t))}>${MOMN[t]}</button>`).join('')}</span></div>
- <div class="chips">${chips}</div>${cost?`<span class="tot">${ub?'Gasto':'Custo'}: ${esc(cost)}</span>`:''}`}
+ <div class="chips">${chips}</div>${(()=>{const sb=ub?{base:ub,ids:u.ids}:sel;if(tab!=='ataque'||!sb.base||sb.base.mom!=='ataque'||sb.base.a.Reverberar)return'';const t=bonusTurno(sb),a=ARMA[F.arma],dn=a?a.dano[Math.min(5,t.b)]:'';return`<div class="bt">Neste ataque: <b>Vantagem ${t.v}</b> · <b>Brutalidade ${t.b}</b>${dn?` · dano ${esc(dn)}`:''}${t.src.length?`<small> (inclui ${esc([...new Set(t.src)].join(', '))})</small>`:''}</div>`})()}${cost?`<span class="tot">${ub?'Gasto':'Custo'}: ${esc(cost)}</span>`:''}`}
+function bonusTurno(sel){const b=sel.base,r={v:0,b:0,src:[]};if(!b||b.mom!=='ataque'||b.a.Reverberar)return r;const x=Object.values(b.a)[0];r.v+=x.v||0;r.b+=x.b||0;
+ const a=ARMA[F.arma];if(a&&a.bonus&&F.aspecto&&a.bonus.includes(F.aspecto)){const m=a.bonus.match(new RegExp(F.aspecto+':?\\s*\\+(\\d+)\\s*(Vantagem|Brutalidade)'));if(m){r[m[2][0]==='V'?'v':'b']+=+m[1];r.src.push(F.arma)}}
+ for(const id of sel.ids){const h=HAB[id];if(!h)continue;for(const fr of h.efeito.split(/(?<=\.)\s/)){if(/aliado|criatura/i.test(fr))continue;for(const m of fr.matchAll(/\+(\d+)\s*(Vantagem|Brutalidade)/g)){r[m[2][0]==='V'?'v':'b']+=+m[1];r.src.push(id)}}}
+ return r}
 function baseClick(v){const c=F.comb,sel=selOf();if(c.uso){log('Confirme (Ok) ou desfaça o uso anterior antes.');return}
  const[op,n]=[v.slice(0,v.indexOf(':')),v.slice(v.indexOf(':')+1)];
  if(op==='t'){c.tab=n;rerUse();return}
@@ -261,8 +271,8 @@ function baseClick(v){const c=F.comb,sel=selOf();if(c.uso){log('Confirme (Ok) ou
  if(nb&&(op==='a'?nb.a[n]:1)&&!baseOk(nb)&&!(op.endsWith('-'))){log('Dados insuficientes ou ação incompatível com a seleção.');return}
  sel.base=nb;const rv=!!(nb&&nb.a.Reverberar);sel.ids=pruneIds(nb,sel.ids);if(!sel.ids.includes('Colheita'))sel.colh='';rerUse()}
 function usarSel(){const c=F.comb,sel=selOf(),p=planIds(sel.ids,sel.colh,baseCost(sel.base));if(p.why){log(p.why);return}
- const vaz={...c.vaz};mudar(p.d);const n=selLbl(sel);const bb=sel.base&&sel.base.mom==='ataque'?Object.values(sel.base.a)[0].b:0;c.tab=selMom(sel)||c.tab;c.uso={ids:[...sel.ids],d:p.d,vaz,ex:{},base:sel.base,lbl:n};if(bb){F.brut=String(Math.min(5,bb));try{$('brut').value=F.brut;renderArma()}catch(e){}}c.sel={ids:[],colh:'',base:null};rerUse();log(`${n}: ${fmtD(p.d)||'sem custo'}.`)}
-function desfazer(){const c=F.comb,u=c.uso;if(!u)return;mudar(Object.fromEntries(Object.entries(u.d).map(([k,v])=>[k,-v])));c.vaz=u.vaz;c.uso=null;c.sel={ids:[],colh:'',base:null};rerUse();log('Uso desfeito, os dados voltaram.')}
+ const vaz={...c.vaz};mudar(p.d);const n=selLbl(sel);const bb=sel.base&&sel.base.mom==='ataque'?Object.values(sel.base.a)[0].b:0;c.tab=selMom(sel)||c.tab;c.uso={ids:[...sel.ids],d:p.d,vaz,ex:{},base:sel.base,lbl:n,cargas:c.cargas||0};if(sel.ids.includes('Atingida Intensiva'))c.cargas=0;const bt=bonusTurno(sel);if(bt.b||bb){F.brut=String(Math.min(5,bt.b));try{$('brut').value=F.brut;renderArma()}catch(e){}}c.sel={ids:[],colh:'',base:null};rerUse();log(`${n}: ${fmtD(p.d)||'sem custo'}.`)}
+function desfazer(){const c=F.comb,u=c.uso;if(!u)return;mudar(Object.fromEntries(Object.entries(u.d).map(([k,v])=>[k,-v])));c.vaz=u.vaz;if(u.cargas!=null)c.cargas=u.cargas;c.uso=null;c.sel={ids:[],colh:'',base:null};rerUse();log('Uso desfeito, os dados voltaram.')}
 function extra(t){const u=F.comb.uso;if(!u)return;let d={};
  if(t==='volta'){d={DD:1};u.ex.volta=true}
  if(t==='sadismo'){d={DM:1};u.ex.sadismo=true}
@@ -291,6 +301,7 @@ document.addEventListener('click',e=>{
  if(d.colh){selOf().colh=d.colh;rerUse();return}
  if(b.id==='aUsar'){usarSel();return}
  if(d.bx){baseClick(d.bx);return}
+ if(d.carga){const c=F.comb;if(!c.on||c.uso||c.cargaRod===c.rodada||(c.cargas||0)>=4||c.DE<1)return;mudar({DE:-1});c.cargas=(c.cargas||0)+1;c.cargaRod=c.rodada;rerUse();log(`Atingida Intensiva: carga ${c.cargas}/4 (−1 DE).`);return}
  if(b.id==='aLimpar'){F.comb.sel={ids:[],colh:'',base:null};rerUse();return}
  if(b.id==='aDesf'){desfazer();return}
  if(b.id==='aOk'){F.comb.uso=null;rerUse();return}
@@ -326,7 +337,7 @@ $('bRod').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.'
  const dg=Math.min(dmMax(),c.DM+1)-c.DM;c.DM+=dg;out.push(`+${dg} DM`);c.vaz={};c.uso=null;c.sel={ids:[],colh:'',base:null};
  const lk=['DA','DD','DE','DM'].map(k=>[k,lockedBy(k)]).filter(x=>x[1]);if(lk.length)out.push('bloqueado até encerrar o turno: '+lk.map(x=>x[0]+' ('+x[1]+')').join(', '));
  save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log(`Rodada ${c.rodada}: ${out.join(', ')}.`)};
-$('bFim').onclick=()=>{Object.assign(F.comb,{on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',base:null}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
+$('bFim').onclick=()=>{Object.assign(F.comb,{cargas:0,cargaRod:0,on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',base:null}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
 $('habAdd').onclick=addHab;$('habIn').addEventListener('keydown',e=>{if(e.key==='Enter')addHab()});
 function addHab(){const n=$('habIn').value.trim();const h=HAB[n];
  if(!h){$('habMsg').textContent='Não encontrei essa habilidade. Escolha um nome da lista.';return}
