@@ -286,7 +286,6 @@ $('bRod').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.'
  const dg=Math.min(dmMax(),c.DM+1)-c.DM;c.DM+=dg;out.push(`+${dg} DM`);c.vaz={};c.uso=null;c.sel={ids:[],colh:'',vant:0,brut:0};
  const lk=['DA','DD','DE','DM'].map(k=>[k,lockedBy(k)]).filter(x=>x[1]);if(lk.length)out.push('bloqueado até encerrar o turno: '+lk.map(x=>x[0]+' ('+x[1]+')').join(', '));
  save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log(`Rodada ${c.rodada}: ${out.join(', ')}.`)};
-$('bTurno').onclick=()=>{const c=F.comb;if(!c.on){log('Inicie o combate primeiro.');return}c.uso=null;c.sel={ids:[],colh:'',vant:0,brut:0};let t='Turno encerrado.';save();renderConds();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log(t)};
 $('bFim').onclick=()=>{Object.assign(F.comb,{on:false,rodada:0,DA:0,DD:0,DE:0,DM:0,vaz:{},uso:null,sel:{ids:[],colh:'',vant:0,brut:0}});save();renderComb();renderHabs();renderEcos();renderAcao();renderAtk();log('Combate encerrado. Os estojos de combate foram zerados.')};
 $('habAdd').onclick=addHab;$('habIn').addEventListener('keydown',e=>{if(e.key==='Enter')addHab()});
 function addHab(){const n=$('habIn').value.trim();const h=HAB[n];
